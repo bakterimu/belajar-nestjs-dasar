@@ -16,6 +16,7 @@ import { UserService } from './user.service';
 import { Connection } from '../connection/connection';
 import { MailService } from '../mail/mail.service';
 import { UserRepository } from '../user-repository/user-repository';
+import { MemberService } from '../member/member.service';
 
 @Controller('api/v1')
 export class UserController {
@@ -24,6 +25,7 @@ export class UserController {
     private readonly connection: Connection,
     private readonly mailService: MailService,
     private readonly userRepository: UserRepository,
+    private readonly memberService: MemberService,
   ) {}
 
   @Get('view/hello')
@@ -41,6 +43,8 @@ export class UserController {
 
   @Get('send')
   async getSend() {
+    const member = this.memberService.sendEmail();
+    console.log(member);
     this.userRepository.save();
     this.mailService.sendMail();
     return this.connection.send();
