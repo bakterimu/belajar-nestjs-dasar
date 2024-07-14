@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Get,
   Header,
@@ -9,13 +8,42 @@ import {
   Post,
   Query,
   Redirect,
+  Req,
+  Res,
 } from '@nestjs/common';
+import { Request, Response } from 'express';
+import { UserService } from './user.service';
+import { Connection } from '../connection/connection';
+import { MailService } from '../mail/mail.service';
+import { UserRepository } from '../user-repository/user-repository';
 
 @Controller('api/v1')
 export class UserController {
-  @Get()
-  getHello() {
-    return 'Hello world';
+  constructor(
+    private readonly userService: UserService,
+    private readonly connection: Connection,
+    private readonly mailService: MailService,
+    private readonly userRepository: UserRepository,
+  ) {}
+
+  @Get('view/hello')
+  getViewHello(@Query('name') name: string, @Res() response: Response) {
+    response.render('index.html', {
+      name: name,
+      title: 'Template Engine',
+    });
+  }
+
+  @Get('hello')
+  async getHello(@Query('name') name: string) {
+    return this.userService.sayHello(name);
+  }
+
+  @Get('send')
+  async getSend() {
+    this.userRepository.save();
+    this.mailService.sendMail();
+    return this.connection.send();
   }
 
   @Get('hello/:length')
@@ -30,15 +58,25 @@ export class UserController {
     return result;
   }
 
+  // @Post('sample-request')
+  // @Header('Content-Type', 'application/json')
+  // @HttpCode(200)
+  // postBody(@Req() request: Request): Record<string, string> {
+  //   const res = request.body;
+  //   return {
+  //     hello: `Halo ${res.name}, anda berumur ${res.age}`,
+  //     address: res.address,
+  //   };
+  // }
+
   @Post('sample-request')
   @Header('Content-Type', 'application/json')
   @HttpCode(200)
-  postBody(
-    @Body() data: { name: string; age: number; address?: string },
-  ): Record<string, string> {
+  postBody(@Req() request: Request): Record<string, string> {
+    const res = request.body;
     return {
-      hello: `Halo ${data.name}, anda berumur ${data.age}`,
-      address: data.address,
+      hello: `Halo ${res.name}, anda berumur ${res.age}`,
+      address: res.address,
     };
   }
 
@@ -54,5 +92,17 @@ export class UserController {
   @Get('sample-redirect')
   getResultRedirect(): string {
     return 'Sudah pindah dari redirect';
+  }
+
+  @Get('set-cookie')
+  setCookie(@Query('name') name: string, @Res() response: Response) {
+    response.cookie('name', name);
+    response.status(200).send('success set cookie');
+  }
+
+  @Get('get-cookie')
+  getCookie(@Req() req: Request) {
+    const nama = req.cookies['name'];
+    return `Hello ${nama}`;
   }
 }
